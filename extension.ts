@@ -1,6 +1,6 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
-import {window, workspace, commands, Disposable, ExtensionContext, StatusBarAlignment, StatusBarItem, TextDocument} from 'vscode';
+import { window, workspace, commands, Disposable, ExtensionContext, StatusBarAlignment, StatusBarItem, TextDocument, Range } from 'vscode';
 
 // this method is called when your extension is activated. activation is
 // controlled by the activation events defined in package.json
@@ -25,11 +25,11 @@ export class WordCounter {
     private _statusBarItem: StatusBarItem;
 
     public updateWordCount() {
-        
+
         // Create as needed
         if (!this._statusBarItem) {
             this._statusBarItem = window.createStatusBarItem(StatusBarAlignment.Left);
-        } 
+        }
 
         // Get the current text editor
         let editor = window.activeTextEditor;
@@ -42,18 +42,20 @@ export class WordCounter {
 
         // Only update status if an MD file
         if (doc.languageId === "markdown") {
-            let wordCount = this._getWordCount(doc);
+            const cursorPosition = editor.selection.active;
+
+            let wordCountToCursor = this._getWordCount(doc.getText(new Range(0, 0, cursorPosition.line, cursorPosition.character)));
+            let wordCount = this._getWordCount(doc.getText());
 
             // Update the status bar
-            this._statusBarItem.text = wordCount !== 1 ? `$(pencil) ${wordCount} Words` : '$(pencil) 1 Word';
+            this._statusBarItem.text = `$(pencil) ${wordCountToCursor} / ${wordCount} Words`;
             this._statusBarItem.show();
         } else {
             this._statusBarItem.hide();
         }
     }
 
-    public _getWordCount(doc: TextDocument): number {
-        let docContent = doc.getText();
+    public _getWordCount(docContent: string): number {
 
         // Parse out unwanted whitespace so the split is accurate
         docContent = docContent.replace(/(< ([^>]+)<)/g, '').replace(/\s+/g, ' ');
